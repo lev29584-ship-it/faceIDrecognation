@@ -13,7 +13,7 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 from BUS.TaiKhoanBUS import TaiKhoanBUS
-import main
+from . import main
 from PyQt6.QtWidgets import QMessageBox
 
 class Ui_MainWindow(object):
@@ -198,19 +198,37 @@ class Ui_MainWindow(object):
         def login_func(self, MainWindow):
                 username = self.txtEmail.text()
                 password = self.txtPassword.text()
+
                 tk = TaiKhoanBUS()
-                resultLogin = tk.checkLogin(username,password)
-                if resultLogin != False:        
-                        # QtWidgets.QApplication.closeAllWindows()          
+                resultLogin = tk.checkLogin(username, password)
+
+                if resultLogin != False:
+
+                        # resultLogin = (id, name, maquyen)
+                        user_id = resultLogin[0]
+                        user_name = resultLogin[1]
+                        maquyen = resultLogin[2]
+
+                        # 🔥 TẠO PERMISSION
+                       
+
+                        # 🔥 MỞ MAIN GUI
                         self.window = QtWidgets.QMainWindow()
                         self.window.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
-                        self.ui = main.mainGUI(resultLogin[0], resultLogin[1], resultLogin[2])                        
-                        self.ui.mainUi(self.window,"home")
+
+                        self.ui = main.mainGUI(username, password, maquyen)
+
+                        self.ui.mainUi(self.window, "home")
+
                         MainWindow.hide()
                         self.window.show()
-                else:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Login thất bại")
 
+                else:
+                        QMessageBox.information(
+                        self.centralwidget,
+                        "Thông báo",
+                        "Login thất bại"
+                        )
 
 if __name__ == "__main__":
     import sys

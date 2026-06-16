@@ -1,14 +1,20 @@
-
 import os
 import sys
+import re
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
+
 from .ChucNang import ChucNang
 from .ConnectDatabase import ConnectDatabase
-import re
+
 
 class ChucNangDAL:
 
+    # ======================
+    # 🔁 ITER ROW
+    # ======================
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,154 +22,241 @@ class ChucNangDAL:
                 break
             for row in rows:
                 yield row
+
+    # ======================
+    # 📥 GET ALL
+    # ======================
+    @staticmethod
     def get():
-        list = []
+        list_data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM chucnang")            
+
+            cursor.execute("SELECT * FROM chucnang")
+
             for row in ChucNangDAL.iter_row(cursor, 10):
-                list.append(row)
+                list_data.append(ChucNang(row[0], row[1]))
+
         except Exception as e:
-            print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            print("GET ERROR:", e)
 
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        return list_data
+
+    # ======================
+    # 🆔 GENERATE ID
+    # ======================
+    @staticmethod
     def generateID():
-        ma = ""
-        stt = ""
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = "SELECT `machucnang` "\
-                    + "FROM `chucnang` "\
-                    + "ORDER BY `machucnang` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
+
+            cursor.execute("""
+                SELECT TOP 1 machucnang
+                FROM chucnang
+                ORDER BY machucnang DESC
+            """)
+
             row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "CN{0:03}".format(stt)
-        return ma
+            last_id = row[0] if row else "CN000"
 
+            num = int(re.sub(r"\D", "", last_id)) + 1
+            return f"CN{num:03}"
 
-    def add( cn: ChucNang):
-        query = "INSERT INTO chucnang "\
-                "VALUES(%s, %s)"
-        data = (cn._machucnang, cn._tenchucnang)              
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+        except Exception as e:
+            print("GEN ID ERROR:", e)
+            return "CN001"
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
-    def update( cn: ChucNang):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE chucnang
-                    SET tenchucnang = %s
-                    WHERE machucnang = %s """
+    # ======================
+    # ➕ ADD
+    # ======================
+    @staticmethod
+    def add(cn: ChucNang):
 
-        data = (cn._tenchucnang, cn._machucnang)
+        query = """
+        INSERT INTO chucnang (machucnang, tenchucnang)
+        VALUES (?, ?)
+        """
+
+        data = (
+            cn.machucnang,
+            cn.tenchucnang
+        )
+
+        conn = cursor = None
 
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
+            conn.commit()
+
+            return True
+
+        except Exception as e:
+            print("ADD ERROR:", e)
             return False
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    # ======================
+    # ✏️ UPDATE
+    # ======================
+    @staticmethod
+    def update(cn: ChucNang):
+
+        query = """
+        UPDATE chucnang
+        SET tenchucnang = ?
+        WHERE machucnang = ?
+        """
+
+        data = (
+            cn.tenchucnang,
+            cn.machucnang
+        )
+
+        conn = cursor = None
+
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, data)
+            conn.commit()
+
+            return True
+
+        except Exception as e:
+            print("UPDATE ERROR:", e)
+            return False
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    # ======================
+    # ❌ DELETE
+    # ======================
+    @staticmethod
     def delete(id):
-        query = "DELETE FROM chucnang WHERE machucnang = '{}'".format(id)
+
+        query = "DELETE FROM chucnang WHERE machucnang = ?"
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(query, (id,))
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
+
+        except Exception as e:
+            print("DELETE ERROR:", e)
             return False
-    
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    # ======================
+    # 🔎 FIND SAFE
+    # ======================
+    @staticmethod
     def find(key, value):
-        list = []
-        query = "SELECT * FROM chucnang WHERE {} LIKE '%{}%'".format(key, value)
+
+        list_data = []
+
+        allowed_keys = ["machucnang", "tenchucnang"]
+
+        if key not in allowed_keys:
+            return []
+
+        query = f"""
+        SELECT *
+        FROM chucnang
+        WHERE {key} LIKE ?
+        """
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
+
+            cursor.execute(query, (f"%{value}%",))
+
             for row in ChucNangDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
+                list_data.append(ChucNang(row[0], row[1]))
+
+        except Exception as e:
+            print("FIND ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        return list_data
+
+    # ======================
+    # 🔍 CHECK EXISTS
+    # ======================
+    @staticmethod
     def checkTenCNTonTai(tenchucnang):
+
+        query = """
+        SELECT 1
+        FROM chucnang
+        WHERE tenchucnang = ?
+        """
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = """
-            SELECT *
-            FROM chucnang
-            WHERE tenchucnang = '{}' """.format(tenchucnang)
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                return True
-        except Exception as ex:
-            print(ex)
-        return False
-    
 
-    
+            cursor.execute(query, (tenchucnang,))
+            return cursor.fetchone() is not None
 
+        except Exception as e:
+            print("CHECK ERROR:", e)
+            return False
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()

@@ -22,6 +22,48 @@ from BUS.SinhVienBUS import SinhVienBUS
 from BUS.HinhAnhSVBUS import HinhAnhSVBUS
 from BUS.DiemDanhBUS import DiemDanhBUS
 from DAL.DiemDanh import DiemDanh
+
+class DatabaseWorker(QtCore.QThread):
+    result = QtCore.pyqtSignal(bool, str, object)
+
+    def __init__(self, operation, payload=None):
+        super().__init__()
+        self.operation = operation
+        self.payload = payload or {}
+
+    def run(self):
+        try:
+            if self.operation == 'findStudent':
+                svBUS = SinhVienBUS()
+                student_name = ''
+                list_sv = svBUS.findMaSinhVien(self.payload.get('masinhvien', ''))
+                if list_sv is not None:
+                    for row in list_sv:
+                        student_name = row[1]
+                self.result.emit(True, 'findStudent', {'name': student_name})
+                return
+
+            if self.operation == 'addAttendance':
+                ddBUS = DiemDanhBUS()
+                diemdanh = self.payload.get('diemdanh')
+                success = ddBUS.add(diemdanh)
+                self.result.emit(success, 'addAttendance', {'madiemdanh': diemdanh._madiemdanh if diemdanh else ''})
+                return
+
+            if self.operation == 'updateGioRa':
+                ddBUS = DiemDanhBUS()
+                success = ddBUS.updateGioRa(
+                    self.payload.get('masinhvien', ''),
+                    self.payload.get('mabuoihoc', ''),
+                    self.payload.get('giora', '')
+                )
+                self.result.emit(success, 'updateGioRa', {})
+                return
+
+        except Exception as ex:
+            self.result.emit(False, self.operation, {'error': str(ex)})
+
+
 class UI_NhanDien(object):
         masinhvien = ''
         hinhanh = ''
@@ -387,6 +429,8 @@ class UI_NhanDien(object):
                 self.btnDongCam.clicked.connect(self.stop_capture_video)
 
                 self.thread = {}
+                self.db_thread = None
+                self.cameraOpen = False
 
                 self.horizontalLayout.addWidget(self.btnDongCam)
                 self.frame_7 = QtWidgets.QFrame(parent=self.centralwidget)
@@ -485,7 +529,13 @@ class UI_NhanDien(object):
                 if list is not None:
                         for row in list:
                                 self.lblIDBuoiHoc.setText(mabuoihoc)
-                                self.lblNgay.setText(row[3].strftime("%d/%m/%Y"))
+                                try:
+                                        ngay = row[3]
+                                        if isinstance(ngay, str):
+                                                ngay = datetime.strptime(ngay, "%Y-%m-%d")
+                                        self.lblNgay.setText(ngay.strftime("%d/%m/%Y"))
+                                except Exception:
+                                        self.lblNgay.setText(str(row[3]))
                                 self.lblThoiGian.setText("{} - {}".format(str(row[1]),str(row[2])))
                                 # LẤY TÊN GV
                                 tengv = ""
@@ -499,57 +549,104 @@ class UI_NhanDien(object):
                 self.lblGiangVien.clear()
                 self.lblNgay.clear()
                 self.lblThoiGian.clear()
-        def stop_capture_video(self):    
-                self.flagSetInfoSV = False                                      
-                self.thread[1].stop()
-                self.camera.setPixmap(QtGui.QPixmap())  
-                self.cmbBuoiHoc.setEnabled(True)
-                self.cmbBuoiHoc.setCurrentIndex(0)
-                self.cmbLoaiDiemDanh.setEnabled(True)
-                self.cmbLoaiDiemDanh.setCurrentIndex(0)
-                self.imageNhanDien.setPixmap(QtGui.QPixmap())  
-                self.txtMaSV.clear()
-                self.txtHoTen.clear()
-                self.timeThoiGian.clear()        
-                self.clearInfoBuoiHoc()        
-                self.lblThongBao.setText("Thông báo: Vui lòng chọn ID buổi học và loại điểm danh để mở camera!")
 
-                
+        def schedule_db_task(self, operation, payload=None):
+                worker = DatabaseWorker(operation, payload)
+                worker.result.connect(self.handle_db_result)
+                worker.finished.connect(lambda: setattr(self, 'db_thread', None))
+                self.db_thread = worker
+                worker.start()
+
+        def handle_db_result(self, success, operation, info):
+                if operation == 'findStudent':
+                        if success:
+                                self.txtHoTen.setText(info.get('name', ''))
+                        return
+                if operation == 'addAttendance':
+                        self.lblThongBao.setText("Thông báo: Lưu điểm danh thành công." if success else "Thông báo: Lưu điểm danh thất bại.")
+                        return
+                if operation == 'updateGioRa':
+                        self.lblThongBao.setText("Thông báo: Cập nhật giờ ra thành công." if success else "Thông báo: Cập nhật giờ ra thất bại.")
+                        return
+
+        def stop_capture_video(self):    
+                self.flagSetInfoSV = False
+                try:
+                        camera_thread = self.thread.get(1) if isinstance(self.thread, dict) else None
+                        if camera_thread is not None:
+                                try:
+                                        camera_thread.signal.disconnect(self.show_wedcam)
+                                except Exception:
+                                        pass
+                                camera_thread.stop()
+                                camera_thread.wait(5000)
+                                self.thread[1] = None
+                except Exception as ex:
+                        print("Error stopping camera thread:", ex)
+                finally:
+                        self.thread = {}
+                        self.camera.setPixmap(QtGui.QPixmap())
+                        self.cmbBuoiHoc.setEnabled(True)
+                        self.cmbBuoiHoc.setCurrentIndex(0)
+                        self.cmbLoaiDiemDanh.setEnabled(True)
+                        self.cmbLoaiDiemDanh.setCurrentIndex(0)
+                        self.imageNhanDien.setPixmap(QtGui.QPixmap())
+                        self.txtMaSV.clear()
+                        self.txtHoTen.clear()
+                        self.timeThoiGian.clear()
+                        self.clearInfoBuoiHoc()
+                        self.lblThongBao.setText("Thông báo: Vui lòng chọn ID buổi học và loại điểm danh để mở camera!")
+                        self.cameraOpen = False
+
         def start_capture_video(self):
+                if self.cameraOpen:
+                        return
                 if(self.cmbBuoiHoc.currentIndex()!=0 and self.cmbLoaiDiemDanh.currentIndex()!=0):
-                        self.thread[1] = face_recognition(index=1)                
-                        self.thread[1].start()
-                        self.thread[1].signal.connect(self.show_wedcam)                        
-                        self.lblThongBao.setText("Thông báo: Camera đang mở...")
-                        self.cmbBuoiHoc.setEnabled(False)
-                        self.cmbLoaiDiemDanh.setEnabled(False)
+                        try:
+                                self.thread[1] = face_recognition(index=0)
+                                self.thread[1].signal.connect(self.show_wedcam)
+                                self.thread[1].start()
+                                self.lblThongBao.setText("Thông báo: Camera đang mở...")
+                                self.cmbBuoiHoc.setEnabled(False)
+                                self.cmbLoaiDiemDanh.setEnabled(False)
+                                self.cameraOpen = True
+                        except Exception as ex:
+                                self.lblThongBao.setText("Thông báo: Lỗi mở camera.")
+                                print("Error opening camera thread:", ex)
+                                self.cameraOpen = False
                 else:
                         self.lblThongBao.setText("Thông báo: Vui lòng chọn ID buổi học và loại điểm danh để mở camera!")
                         QtWidgets.QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng chọn ID buổi học và loại điểm danh để mở camera!" )
 
         def show_wedcam(self, cv_img):
-                """Updates the image_label with a new opencv image"""    
-                            
-                self.masinhvien = self.thread[1].getIDSV()            
-                if self.masinhvien not in self.arr_masinhvien:                    
+                """Updates the image_label with a new opencv image"""
+                camera_thread = self.thread.get(1) if isinstance(self.thread, dict) else None
+                if camera_thread is None:
+                        return
+
+                self.masinhvien = camera_thread.getIDSV()
+                if self.masinhvien and self.masinhvien not in self.arr_masinhvien:
                         self.arr_masinhvien.append(self.masinhvien)
                         self.flagSetInfoSV = False
-                
-                if (self.thread[1].getLink_Image()!='') and self.flagSetInfoSV == False:                        
-                        # SET IMAGE NHẬN DIỆN
-                        pixmap = self.convert_cv_qt(self.thread[1].getCv_Image_Cur(), 131, 131)    
-                        self.imageNhanDien.setPixmap(pixmap)                
-                        self.setInfoSV()       
-                        self.hinhanh = self.thread[1].getLink_Image()
-                        if self.cmbLoaiDiemDanh.currentIndex()==1:
-                                self.addDiemDanh()
-                        else:
-                                self.updateGioRa()
 
+                if camera_thread.getLink_Image() != '' and self.flagSetInfoSV == False:
+                        pixmap = self.convert_cv_qt(camera_thread.getCv_Image_Cur(), 131, 131)
+                        self.imageNhanDien.setPixmap(pixmap)
+                        self.hinhanh = camera_thread.getLink_Image()
+                        self.setInfoSV()
+                        if self.cmbLoaiDiemDanh.currentIndex() == 1:
+                                ddBUS = DiemDanhBUS()
+                                diemdanh = DiemDanh(ddBUS.generateID(), self.masinhvien, self.timeThoiGian.text(), '', self.lblIDBuoiHoc.text(), self.hinhanh)
+                                self.schedule_db_task('addAttendance', {'diemdanh': diemdanh})
+                        else:
+                                self.schedule_db_task('updateGioRa', {
+                                    'masinhvien': self.masinhvien,
+                                    'mabuoihoc': self.lblIDBuoiHoc.text(),
+                                    'giora': self.timeThoiGian.text()
+                                })
                         self.flagSetInfoSV = True
 
-                # SET CAMERA
-                qt_img = self.convert_cv_qt(cv_img, 501, 341)                
+                qt_img = self.convert_cv_qt(cv_img, 501, 341)
                 self.camera.setPixmap(qt_img)
 
         def convert_cv_qt(self, cv_img, width, height):
@@ -563,16 +660,10 @@ class UI_NhanDien(object):
         
         
         def setInfoSV(self):
-                if self.masinhvien!='' :
-                        tensinhvien = ''
-                        svBUS = SinhVienBUS()
-                        list = svBUS.findMaSinhVien(self.masinhvien)
-                        if list is not None:
-                                for row in list:
-                                        tensinhvien = row[1]                                
-                
+                if self.masinhvien != '':
                         self.txtMaSV.setText(self.masinhvien)
-                        self.txtHoTen.setText(tensinhvien)
+                        self.txtHoTen.clear()
+                        self.schedule_db_task('findStudent', {'masinhvien': self.masinhvien})
 
                         # SET THỜI GIAN
                         time_str = self.label_2.text()

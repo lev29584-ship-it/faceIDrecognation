@@ -1,14 +1,11 @@
-
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-from .BuoiHoc import BuoiHoc
-from .ConnectDatabase import ConnectDatabase
 import re
+from .ConnectDatabase import ConnectDatabase
+from .BuoiHoc import BuoiHoc
+
 
 class BuoiHocDAL:
 
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,179 +13,239 @@ class BuoiHocDAL:
                 break
             for row in rows:
                 yield row
+
+    # ======================
+    # 📥 GET ALL
+    # ======================
+    @staticmethod
     def get():
-        list = []
+        data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()  
-            cursor.execute("SELECT * FROM buoihoc")      
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM buoihoc")
+
             for row in BuoiHocDAL.iter_row(cursor, 10):
-                list.append(row)
+                data.append(row)
+
         except Exception as e:
-            print(e)
+            print("GET ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
-    
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return data
+
+    # ======================
+    # 📊 COUNT
+    # ======================
+    @staticmethod
     def countAll():
-        count = 0
+        conn = cursor = None
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM buoihoc")   
-            row = cursor.fetchone()         
-            if row is not None:
-                count = row[0]
-        except Exception as e:
-            print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return count
-    
-    def generateID():
-        ma = ""
-        stt = ""
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            query = "SELECT `mabuoihoc` "\
-                    + "FROM `buoihoc` "\
-                    + "ORDER BY `mabuoihoc` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
+
+            cursor.execute("SELECT COUNT(*) FROM buoihoc")
             row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "BH{0:03}".format(stt)
-        return ma
 
+            return row[0] if row else 0
 
-    def add( bh: BuoiHoc):
-        query = "INSERT INTO buoihoc (mabuoihoc, giobatdau, gioketthuc, ngay, malop, magiangvien)"\
-                "VALUES(%s, %s, %s, %s, %s, %s)"
-        data = (bh._mabuoihoc, bh._giobatdau,
-                bh._gioketthuc, bh._ngay, bh._malop, bh._magiangvien)              
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+        except Exception as e:
+            print("COUNT ERROR:", e)
+            return 0
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
 
-    def update( bh: BuoiHoc):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE buoihoc
-                    SET giobatdau = %s,
-                    gioketthuc = %s,
-                    ngay = %s,
-                    malop = %s,
-                    magiangvien = %s
-                    WHERE mabuoihoc = %s """
-
-        data = (bh._giobatdau, bh._gioketthuc, bh._ngay,
-                bh._malop, bh._magiangvien, bh._mabuoihoc)
-
+    # ======================
+    # 🆔 GENERATE ID
+    # ======================
+    @staticmethod
+    def generateID():
+        conn = cursor = None
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT TOP 1 mabuoihoc
+                FROM buoihoc
+                ORDER BY mabuoihoc DESC
+            """)
+
+            row = cursor.fetchone()
+            last_id = row[0] if row else "BH000"
+
+            num = int(re.sub(r"\D", "", last_id)) + 1
+            return f"BH{num:03}"
+
+        except Exception as e:
+            print("GEN ID ERROR:", e)
+            return "BH001"
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ======================
+    # ➕ ADD
+    # ======================
+    @staticmethod
+    def add(bh: BuoiHoc):
+        query = """
+        INSERT INTO buoihoc
+        (mabuoihoc, giobatdau, gioketthuc, ngay, malop, magiangvien)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """
+
+        data = (
+            bh.mabuoihoc,
+            bh.giobatdau,
+            bh.gioketthuc,
+            bh.ngay,
+            bh.malop,
+            bh.magiangvien
+        )
+
+        conn = cursor = None
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
+            conn.commit()
+
+            return cursor.rowcount > 0
+
+        except Exception as e:
+            print("ADD ERROR:", e)
             return False
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
 
+    # ======================
+    # ✏️ UPDATE
+    # ======================
+    @staticmethod
+    def update(bh: BuoiHoc):
+        query = """
+        UPDATE buoihoc
+        SET giobatdau=?,
+            gioketthuc=?,
+            ngay=?,
+            malop=?,
+            magiangvien=?
+        WHERE mabuoihoc=?
+        """
+
+        data = (
+            bh.giobatdau,
+            bh.gioketthuc,
+            bh.ngay,
+            bh.malop,
+            bh.magiangvien,
+            bh.mabuoihoc
+        )
+
+        conn = cursor = None
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, data)
+            conn.commit()
+
+            return cursor.rowcount > 0
+
+        except Exception as e:
+            print("UPDATE ERROR:", e)
+            return False
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ======================
+    # ❌ DELETE
+    # ======================
+    @staticmethod
     def delete(id):
-        query = "DELETE FROM buoihoc WHERE mabuoihoc = '{}'".format(id)
-        try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
-    def find(key, value):
-        list = []
-        query = "SELECT * FROM buoihoc WHERE {} LIKE '%{}%'".format(key, value)
-        try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query)
-            for row in BuoiHocDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
-    def findMaBuoiHoc(value):
-        list = []
-        query = "SELECT * FROM buoihoc WHERE mabuoihoc = '{}'".format(value)
-        try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query)
-            for row in BuoiHocDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+        query = "DELETE FROM buoihoc WHERE mabuoihoc=?"
 
+        conn = cursor = None
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (id,))
+            conn.commit()
+
+            return cursor.rowcount > 0
+
+        except Exception as e:
+            print("DELETE ERROR:", e)
+            return False
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ======================
+    # 🔎 FIND SAFE
+    # ======================
+    @staticmethod
+    def find(key, value):
+        allowed = ["mabuoihoc", "malop", "magiangvien", "ngay"]
+
+        if key not in allowed:
+            return []
+
+        query = f"SELECT * FROM buoihoc WHERE {key} LIKE ?"
+
+        conn = cursor = None
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (f"%{value}%",))
+
+            return list(BuoiHocDAL.iter_row(cursor, 10))
+
+        except Exception as e:
+            print("FIND ERROR:", e)
+            return []
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ======================
+    # 🔎 FIND BY ID
+    # ======================
+    @staticmethod
+    def findMaBuoiHoc(value):
+        query = "SELECT * FROM buoihoc WHERE mabuoihoc=?"
+
+        conn = cursor = None
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (value,))
+            return list(BuoiHocDAL.iter_row(cursor, 10))
+
+        except Exception as e:
+            print("FIND ID ERROR:", e)
+            return []
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()

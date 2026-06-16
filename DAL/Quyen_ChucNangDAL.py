@@ -1,14 +1,16 @@
-
 import os
 import sys
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
+
 from .Quyen_ChucNang import Quyen_ChucNang
 from .ConnectDatabase import ConnectDatabase
-import re
+
 
 class Quyen_ChucNangDAL:
 
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,160 +18,166 @@ class Quyen_ChucNangDAL:
                 break
             for row in rows:
                 yield row
+
+    # ======================
+    # GET ALL
+    # ======================
+    @staticmethod
     def get():
-        list = []
+        list_data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM quyen_chucnang")            
+
+            cursor.execute("SELECT * FROM quyen_chucnang")
+
             for row in Quyen_ChucNangDAL.iter_row(cursor, 10):
-                list.append(row)
+                list_data.append(row)
+
         except Exception as e:
             print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
-
-    def generateID():
-        ma = ""
-        stt = ""
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            query = "SELECT `maquyen_chucnang` "\
-                    + "FROM `quyen_chucnang` "\
-                    + "ORDER BY `maquyen_chucnang` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "GV{0:03}".format(stt)
-        return ma
-
-
-    def add( qcn: Quyen_ChucNang):
-        query = "INSERT INTO quyen_chucnang "\
-                "VALUES(%s, %s)"
-        data = (qcn._maquyen, qcn._machucnang)              
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
-    def update( qcn: Quyen_ChucNang):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE quyen_chucnang
-                    SET machucnang = %s
-                    WHERE maquyen = %s 
-                    AND machucnang = %s """
+        return list_data
 
-        data = (qcn._machucnang, qcn._maquyen, qcn._machucnang)
+    # ======================
+    # ADD
+    # ======================
+    @staticmethod
+    def add(qcn: Quyen_ChucNang):
+
+        query = """
+        INSERT INTO quyen_chucnang (maquyen, machucnang)
+        VALUES (?, ?)
+        """
+
+        data = (qcn._maquyen, qcn._machucnang)
+
+        conn = cursor = None
 
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
+            conn.commit()
+
+            return True
+
         except Exception as ex:
             print(ex)
-            return False
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
+
+    # ======================
+    # UPDATE (RBAC SAFE)
+    # ======================
+    @staticmethod
+    def update(maquyen, old_machucnang, new_machucnang):
+
+        query = """
+        UPDATE quyen_chucnang
+        SET machucnang = ?
+        WHERE maquyen = ?
+        AND machucnang = ?
+        """
+
+        conn = cursor = None
+
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (new_machucnang, maquyen, old_machucnang))
+
+            if cursor.rowcount > 0:
+                conn.commit()
+                return True
+
+        except Exception as ex:
+            print(ex)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        return False
+
+    # ======================
+    # DELETE BY ROLE
+    # ======================
+    @staticmethod
     def delete(maquyen):
-        query = "DELETE FROM quyen_chucnang WHERE maquyen = '{}'".format(maquyen)
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(
+                "DELETE FROM quyen_chucnang WHERE maquyen = ?",
+                (maquyen,)
+            )
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
+
         except Exception as ex:
             print(ex)
-            return False
-    
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
+
+    # ======================
+    # GET PERMISSIONS BY ROLE
+    # ======================
+    @staticmethod
     def getListChucNangTheoQuyen(maquyen):
-        list = []
-        query = """ SELECT machucnang
-                    FROM quyen_chucnang
-                    WHERE maquyen = '{}' """.format(maquyen)
+
+        list_permission = []
+        conn = cursor = None
+
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
+
+            cursor.execute(
+                "SELECT machucnang FROM quyen_chucnang WHERE maquyen = ?",
+                (maquyen,)
+            )
+
             for row in Quyen_ChucNangDAL.iter_row(cursor, 10):
-                list.append(row[0])
-            
+                list_permission.append(row[0])
+
         except Exception as ex:
-            print(ex)            
+            print(ex)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
-    # def find(key, value):
-    #     list = []
-    #     query = "SELECT * FROM quyen_chucnang WHERE {} LIKE '%{}%'".format(key, value)
-    #     try:
-    #          # Kết nối database
-    #         connDb = ConnectDatabase()
-    #         conn = connDb.Connect()
-    #         cursor = conn.cursor()
-    #         cursor.execute(query)
-    #         for row in Quyen_ChucNangDAL.iter_row(cursor, 10):
-    #             list.append(row)            
-    #     except Exception as ex:
-    #         print(ex)
-    
-    #     finally:
-    #         # Đóng kết nối
-    #         cursor.close()
-    #         conn.close()
-    #     return list
-    
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
-    
-
+        return list_permission

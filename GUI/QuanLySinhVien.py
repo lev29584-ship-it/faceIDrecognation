@@ -19,12 +19,15 @@ from DAL.ConnectDatabase import ConnectDatabase
 
 from BUS.SinhVienBUS import SinhVienBUS
 from DAL.SinhVien import SinhVien
-from CameraLayAnh import CameraLayAnh
-from ViewImage import ViewImage
+
+from .CameraLayAnh import CameraLayAnh
+from .ViewImage import ViewImage
 from datetime import datetime
+
 from BUS.LopBUS import LopBUS
 from DAL.Lop import Lop
-from check_error import check_error
+
+from .check_error import CheckError
 
 class UI_QuanLySinhVien(object):
         ma = ""
@@ -950,27 +953,27 @@ class UI_QuanLySinhVien(object):
                 self.txtSDT.clear()
                 self.cmbKhoaHoc.clear()
 
-        def validateSV(self, sv: SinhVien):        
+        def validateSV(self, sv: SinhVien, exclude_id=None):        
                 if sv._hoten == '' or sv._malop == '' or \
                 sv._cmnd == '' or sv._sodienthoai == '' or sv._email == '':
                         QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập đầy đủ thông tin")
                         return False
-                if check_error.check_email(self, input=sv._email) == False:
+                if CheckError.check_email(self, input=sv._email) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập email đúng định dạng")
                         return False
-                if check_error.check_cmnd(self, input=sv._cmnd) == False:
+                if CheckError.check_cmnd(self, input=sv._cmnd) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập CMND đúng định dạng")
                         return False
-                if check_error.check_phone(self, input=sv._sodienthoai) == False:
+                if CheckError.check_phone(self, input=sv._sodienthoai) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập số điện thoại đúng định dạng")
                         return False
-                if SinhVienBUS.checkTonTai(self, key="cmnd", value=sv._cmnd) == False:
+                if SinhVienBUS.checkTonTai(self, key="cmnd", value=sv._cmnd, exclude_id=exclude_id) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","CMND đã tồn tại")
                         return False
-                if SinhVienBUS.checkTonTai(self, key="sodienthoai", value=sv._sodienthoai) == False:
+                if SinhVienBUS.checkTonTai(self, key="sodienthoai", value=sv._sodienthoai, exclude_id=exclude_id) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","Số điện thoại đã tồn tại")
                         return False
-                if SinhVienBUS.checkTonTai(self, key="email", value=sv._email) == False:
+                if SinhVienBUS.checkTonTai(self, key="email", value=sv._email, exclude_id=exclude_id) == False:
                         QMessageBox.information(self.centralwidget,"Thông báo","Email đã tồn tại")
                         return False
                 return True
@@ -1009,7 +1012,7 @@ class UI_QuanLySinhVien(object):
                 sodienthoai = self.txtSDT.text()
                 khoahoc = self.cmbKhoaHoc.text()
                 sv = SinhVien(masinhvien, hoten, malop , cmnd, gioitinh, date,email ,sodienthoai,khoahoc)
-                if self.validateSV(sv):    
+                if self.validateSV(sv, exclude_id=masinhvien):    
                         if(svBUS.update(sv)):
                                 QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thành công")
                                 self.loadDataQTable()

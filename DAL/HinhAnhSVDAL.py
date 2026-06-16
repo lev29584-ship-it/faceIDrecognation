@@ -1,14 +1,10 @@
-
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 from .HinhAnhSV import HinhAnhSV
 from .ConnectDatabase import ConnectDatabase
-import re
+
 
 class HinhAnhSVDAL:
 
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,83 +12,125 @@ class HinhAnhSVDAL:
                 break
             for row in rows:
                 yield row
+
+    # ======================
+    # GET ALL
+    # ======================
+    @staticmethod
     def get():
-        list = []
+        list_data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM hinhanh_sinhvien")            
-            for row in HinhAnhSVDAL.iter_row(cursor, 10):
-                list.append(row)
+
+            cursor.execute("SELECT * FROM hinhanh_sinhvien")
+
+            for row in HinhAnhSVDAL.iter_row(cursor):
+                list_data.append(row)
+
         except Exception as e:
-            print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list    
+            print("GET ERROR:", e)
 
-    def add( ha_sv : HinhAnhSV):
-        query = "INSERT INTO hinhanh_sinhvien "\
-                "VALUES(%s, %s)"
-        data = (ha_sv._masinhvien , ha_sv._hinhanh)              
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data
+
+    # ======================
+    # ADD IMAGE
+    # ======================
+    @staticmethod
+    def add(ha: HinhAnhSV):
+        query = """
+        INSERT INTO hinhanh_sinhvien
+        (masinhvien, hinhanh)
+        VALUES (?, ?)
+        """
+
+        data = (
+            ha.masinhvien,
+            ha.duongdan if hasattr(ha, "duongdan") else ha.hinhanh
+        )
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
+
+            cursor.execute(query, data)
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+        except Exception as e:
+            print("ADD ERROR:", e)
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor: cursor.close()
+            if conn: conn.close()
+
         return False
-  
-    def delete(id):
-        query = "DELETE FROM hinhanh_sinhvien WHERE masinhvien = '{}'".format(id)
+
+    # ======================
+    # DELETE ALL BY STUDENT
+    # ======================
+    @staticmethod
+    def delete(masinhvien):
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(
+                "DELETE FROM hinhanh_sinhvien WHERE masinhvien=?",
+                (masinhvien,)
+            )
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
+
+        except Exception as e:
+            print("DELETE ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False    
-    def find(value):
-        list = []
-        query = "SELECT * FROM hinhanh_sinhvien WHERE masinhvien = '{}' LIMIT 1".format(value)
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return False
+
+    # ======================
+    # GET IMAGES BY STUDENT
+    # ======================
+    @staticmethod
+    def find(masinhvien):
+        list_data = []
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            for row in HinhAnhSVDAL.iter_row(cursor, 1):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
+
+            cursor.execute("""
+                SELECT masinhvien, hinhanh
+                FROM hinhanh_sinhvien
+                WHERE masinhvien=?
+            """, (masinhvien,))
+
+            for row in HinhAnhSVDAL.iter_row(cursor):
+                list_data.append(row)
+
+        except Exception as e:
+            print("FIND ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data

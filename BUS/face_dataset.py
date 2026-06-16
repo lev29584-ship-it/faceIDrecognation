@@ -1,55 +1,70 @@
-
 import cv2
 import numpy as np
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
-from PyQt6.QtWidgets import QMessageBox
-from .HinhAnhSVBUS import HinhAnhSVBUS
-from DAL.HinhAnhSV import HinhAnhSV
+import time
+from PyQt6.QtCore import QThread, pyqtSignal
 
 
 class face_dataset(QThread):
     signal = pyqtSignal(np.ndarray)
-    cap = None
 
-    def __init__(self, index, id):
-        self.index = index
-        self.idSV = id
+    def __init__(self, index, id, permission=None):
         super(face_dataset, self).__init__()
 
+        self.index = index
+        self.idSV = id
+        self.permission = permission
+
+        self._running = True
+        self.cap = None
+
+    # ======================
+    # 🔐 CHECK PERMISSION
+    # ======================
+    def check_permission(self):
+        if not self.permission:
+            return False
+
+        permissions = getattr(self.permission, "permissions", [])
+
+        return "CN_FACE_DATA" in permissions
+
+    # ======================
+    # 🛑 STOP THREAD
+    # ======================
+    def stop(self):
+        self._running = False
+
+    # ======================
+    # 🚀 RUN THREAD
+    # ======================
     def run(self):
-        cam = cv2.VideoCapture(0)
 
-        face_detector = cv2.CascadeClassifier(
-            'haarcascade_frontalface_default.xml')
+        if not self.check_permission():
+            print("❌ Không có quyền sử dụng Face Dataset")
+            return
 
-        count = 0
-        hsBUS = HinhAnhSVBUS()
-        # XÓa ảnh sinh viên trong database
-        hsBUS.delete(self.idSV) 
-        while (True):
+        self.cap = cv2.VideoCapture(0)
 
-            ret, img = cam.read()
-            img = cv2.flip(img, 1)  # flip video image vertically
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            faces = face_detector.detectMultiScale(gray, 1.3, 5)
-                        
-            for (x, y, w, h) in faces:
+        if not self.cap.isOpened():
+            print("❌ Không mở được camera")
+            return
 
-                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                count += 1
-                # Save the captured image into the datasets folder
-                nameFile = f'./image/photo/{self.idSV}-image{count}.jpg'
-                cv2.imwrite(nameFile, gray[y:y+h, x:x+w])
-                # LƯU VÀO DATABASE
-                hs = HinhAnhSV(self.idSV, nameFile)
-                hsBUS.add(hs)
+        while self._running:
+            ret, frame = self.cap.read()
 
-            if ret:
-                self.signal.emit(img)
+            if not ret:
+                time.sleep(0.01)
+                continue
 
-            if count >= 200:  # Take 30 face sample and stop video
-                arr = np.array([0])
-                self.signal.emit(arr)
-                break
+            self.signal.emit(frame)
 
-        cam.release()
+            # 🔥 giảm CPU usage
+            time.sleep(0.01)
+
+        # ======================
+        # 🧹 CLEAN UP
+        # ======================
+        if self.cap:
+            self.cap.release()
+
+        cv2.destroyAllWindows()

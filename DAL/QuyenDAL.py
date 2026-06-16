@@ -1,14 +1,11 @@
-
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
+import re
 from .Quyen import Quyen
 from .ConnectDatabase import ConnectDatabase
-import re
+
 
 class QuyenDAL:
 
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,155 +13,218 @@ class QuyenDAL:
                 break
             for row in rows:
                 yield row
+
+    # ===== GET =====
+    @staticmethod
     def get():
-        list = []
+        list_data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM quyen")            
+
+            cursor.execute("SELECT * FROM quyen")
+
             for row in QuyenDAL.iter_row(cursor, 10):
-                list.append(row)
+                list_data.append(row)
+
         except Exception as e:
             print(e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
+        return list_data
+
+    # ===== GENERATE ID =====
+    @staticmethod
     def generateID():
-        ma = ""
-        stt = ""
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = "SELECT `maquyen` "\
-                    + "FROM `quyen` "\
-                    + "ORDER BY `maquyen` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
+
+            cursor.execute("""
+                SELECT TOP 1 maquyen
+                FROM quyen
+                ORDER BY maquyen DESC
+            """)
+
             row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "Q{0:03}".format(stt)
-        return ma
+            last_id = row[0] if row else "Q000"
 
+            num = int(re.sub(r"\D", "", last_id)) + 1
+            return f"Q{num:03}"
 
-    def add( q: Quyen):
-        query = "INSERT INTO quyen "\
-                "VALUES(%s, %s)"
-        data = (q._maquyen, q._tenquyen)              
+        except Exception as e:
+            print("Lỗi tăng id:", e)
+            return "Q001"
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    # ===== ADD =====
+    @staticmethod
+    def add(q: Quyen):
+        query = """
+        INSERT INTO quyen (maquyen, tenquyen)
+        VALUES (?, ?)
+        """
+
+        data = (q._maquyen, q._tenquyen)
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
+
+            cursor.execute(query, data)
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+        except Exception as e:
+            print(e)
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
 
-    def update( q: Quyen):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE quyen
-                    SET tenquyen = %s
-                    WHERE maquyen = %s """
+    # ===== UPDATE =====
+    @staticmethod
+    def update(q: Quyen):
+        query = """
+        UPDATE quyen
+        SET tenquyen = ?
+        WHERE maquyen = ?
+        """
 
         data = (q._tenquyen, q._maquyen)
 
+        conn = cursor = None
+
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+        except Exception as e:
+            print(e)
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
+
+    # ===== DELETE =====
+    @staticmethod
     def delete(id):
-        query = "DELETE FROM quyen WHERE maquyen = '{}'".format(id)
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(
+                "DELETE FROM quyen WHERE maquyen = ?",
+                (id,)
+            )
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
+
+        except Exception as e:
+            print(e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
+
+    # ===== FIND =====
+    @staticmethod
     def find(key, value):
-        list = []
-        query = "SELECT * FROM quyen WHERE {} LIKE '%{}%'".format(key, value)
+
+        allowed_keys = ["maquyen", "tenquyen"]
+        if key not in allowed_keys:
+            return []
+
+        list_data = []
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
+
+            cursor.execute(
+                f"SELECT * FROM quyen WHERE {key} LIKE ?",
+                (f"%{value}%",)
+            )
+
             for row in QuyenDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
+                list_data.append(row)
+
+        except Exception as e:
+            print(e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        return list_data
+
+    # ===== CHECK =====
+    @staticmethod
     def checkTenQuyenTonTai(tenquyen):
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = """
-            SELECT *
-            FROM quyen
-            WHERE tenquyen = '{}' """.format(tenquyen)
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                return True
-        except Exception as ex:
-            print(ex)
+
+            cursor.execute(
+                "SELECT 1 FROM quyen WHERE tenquyen = ?",
+                (tenquyen,)
+            )
+
+            return cursor.fetchone() is not None
+
+        except Exception as e:
+            print(e)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
         return False
-
-    
-
-    
-

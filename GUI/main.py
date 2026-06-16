@@ -1,15 +1,15 @@
 from PyQt6 import QtGui, QtWidgets, QtCore
 from pathlib import Path, PurePath
 import sys
-import Home
-import QuanLySinhVien
-import QuanLyBuoiHoc
-import NhanDien
-import QuanLyDiemDanh
-import ThongKe
-import QuanLyGiangVien
-import QuanLyTaiKhoan
-import Login
+from . import Home
+from . import QuanLySinhVien
+from . import QuanLyBuoiHoc
+from . import NhanDien
+from . import QuanLyDiemDanh
+from . import ThongKe
+from . import QuanLyGiangVien
+from . import QuanLyTaiKhoan
+from . import Login
 import qdarkstyle
 from BUS.Quyen_ChucNangBUS import Quyen_ChucNangBUS
 from PyQt6.QtCore import QCoreApplication
@@ -107,7 +107,7 @@ class mainGUI():
 
 
     def showMinimized(self):
-        MainWindow.showMinimized()
+        self.MainWindow.showMinimized()
 
 
     def Home_UI(self):
@@ -258,29 +258,46 @@ class mainGUI():
         self.window.show()
 
     def checkFunctionInPermission(self, maquyen):
-        qcn = Quyen_ChucNangBUS()
-        listcn = qcn.getListChucNangTheoQuyen(maquyen) 
-        if ('CN001' or 'CN002' or 'CN003' or 'CN004') in listcn:
-            if 'CN001' not in listcn:
+            print("Ma quyen:", maquyen)
+            qcn = Quyen_ChucNangBUS()
+            listcn = qcn.getListChucNangTheoQuyen(maquyen)
+            print("Danh sach quyen:", listcn)
+            permissions = set(listcn)
+
+            # =========================
+            # GROUP: QUẢN LÝ
+            # =========================
+            if 'CN001' not in permissions:
                 self.ui.btnQLSV.hide()
-            if 'CN002' not in listcn:
-                self.ui.btnDiemDanh.hide()                
-            if 'CN003' not in listcn:
-                self.ui.btnGiangVien.hide() 
-            if 'CN004' not in listcn:
+
+            if 'CN002' not in permissions:
+                self.ui.btnDiemDanh.hide()
+
+            if 'CN003' not in permissions:
+                self.ui.btnGiangVien.hide()
+
+            if 'CN004' not in permissions:
                 self.ui.btnBuoiHoc.hide()
-                           
-        else:
-            self.ui.btnQuanLy.hide()
-        if 'CN005' not in listcn:
-            self.ui.btnNhanDien.hide()
-        if 'CN006' not in listcn:
-            self.ui.btnThongKe.hide()
-        if 'CN007' not in listcn:
-            self.ui.btnTaiKhoan.hide()
-        if 'CN008' not in listcn:
-            self.ui.btnMatKhau.hide()
-        
+
+            # Nếu không có quyền quản lý gì thì ẩn luôn menu Quản lý
+            if not any(x in permissions for x in ['CN001','CN002','CN003','CN004']):
+                self.ui.btnQuanLy.hide()
+
+            # =========================
+            # CHỨC NĂNG KHÁC
+            # =========================
+            if 'CN005' not in permissions:
+                self.ui.btnNhanDien.hide()
+
+            if 'CN006' not in permissions:
+                self.ui.btnThongKe.hide()
+
+            if 'CN007' not in permissions:
+                self.ui.btnTaiKhoan.hide()
+
+            if 'CN008' not in permissions:
+                self.ui.btnMatKhau.hide()
+                
 
 
 

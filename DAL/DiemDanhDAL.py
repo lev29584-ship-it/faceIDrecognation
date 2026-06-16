@@ -1,16 +1,11 @@
-
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-from .DiemDanh import DiemDanh
-from .ConnectDatabase import ConnectDatabase
 import re
-# from DAL.SinhVienDAL import SinhVienDAL
-from .SinhVien import SinhVien
+from .ConnectDatabase import ConnectDatabase
+from .DiemDanh import DiemDanh
+
 
 class DiemDanhDAL:
-    # DAL.SinhVien sv = SinhVienDAL
+
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -18,215 +13,276 @@ class DiemDanhDAL:
                 break
             for row in rows:
                 yield row
-                
+
+    # ======================
+    # 📥 GET
+    # ======================
+    @staticmethod
     def get():
-        list = []
+        list_data = []
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = "SELECT dd.madiemdanh, dd.masinhvien, sv.hoten, l.tenlop, "\
-            + "dd.giovao, dd.giora, dd.mabuoihoc, "\
-            + "dd.hinhanh FROM diemdanh dd, sinhvien sv, lop l WHERE "\
-            + "l.malop = sv.malop AND dd.masinhvien = sv.masinhvien"
-            cursor.execute(query) 
-            for row in DiemDanhDAL.iter_row(cursor, 10):
-                list.append(row)
+
+            cursor.execute("""
+                SELECT
+                    dd.madiemdanh,
+                    dd.masinhvien,
+                    sv.hoten,
+                    l.tenlop,
+                    dd.giovao,
+                    dd.giora,
+                    dd.mabuoihoc,
+                    dd.hinhanh
+                FROM diemdanh dd
+                JOIN sinhvien sv ON dd.masinhvien = sv.masinhvien
+                JOIN lop l ON l.malop = sv.malop
+            """)
+
+            for row in DiemDanhDAL.iter_row(cursor):
+                list_data.append(row)
+
         except Exception as e:
-            print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            print("GET ERROR:", e)
 
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data
+
+    # ======================
+    # 🆔 GENERATE ID
+    # ======================
+    @staticmethod
     def generateID():
-        ma = ""
-        stt = ""
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = "SELECT `madiemdanh` "\
-                    + "FROM `diemdanh` "\
-                    + "ORDER BY `madiemdanh` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
+
+            cursor.execute("""
+                SELECT TOP 1 madiemdanh
+                FROM diemdanh
+                ORDER BY madiemdanh DESC
+            """)
+
             row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "DD{0:03}".format(stt)
-        return ma
+            last_id = row[0] if row else "DD000"
 
-    def update( dd: DiemDanh):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE diemdanh
-                    SET masinhvien = %s,
-                    giovao = %s,
-                    giora = %s
-                    WHERE madiemdanh = %s"""
+            num = int(re.sub(r"\D", "", last_id)) + 1
+            return f"DD{num:03}"
 
-        data = (dd._masinhvien, dd._giovao, dd._giora, dd._madiemdanh)
+        except Exception as e:
+            print("GEN ID ERROR:", e)
+            return "DD001"
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ======================
+    # ➕ ADD
+    # ======================
+    @staticmethod
+    def add(dd: DiemDanh):
+        query = """
+        INSERT INTO diemdanh
+        (madiemdanh, masinhvien, giovao, mabuoihoc, hinhanh)
+        VALUES (?, ?, ?, ?, ?)
+        """
+
+        data = (
+            dd.madiemdanh,
+            dd.masinhvien,
+            dd.giovao,
+            dd.mabuoihoc,
+            dd.hinhanh
+        )
+
+        conn = cursor = None
 
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+        except Exception as e:
+            print("ADD ERROR:", e)
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor: cursor.close()
+            if conn: conn.close()
+
         return False
-    def deleteAll():
-        query = "DELETE FROM diemdanh"
+
+    # ======================
+    # ✏️ UPDATE
+    # ======================
+    @staticmethod
+    def update(dd: DiemDanh):
+        query = """
+        UPDATE diemdanh
+        SET masinhvien=?, giovao=?, giora=?
+        WHERE madiemdanh=?
+        """
+
+        data = (
+            dd.masinhvien,
+            dd.giovao,
+            dd.giora,
+            dd.madiemdanh
+        )
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(query, data)
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
+
+        except Exception as e:
+            print("UPDATE ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor: cursor.close()
+            if conn: conn.close()
+
         return False
+
+    # ======================
+    # ⏱ UPDATE GIỜ RA
+    # ======================
+    @staticmethod
+    def updateGioRa(masinhvien, mabuoihoc, giora):
+        query = """
+        UPDATE diemdanh
+        SET giora=?
+        WHERE masinhvien=? AND mabuoihoc=?
+        """
+
+        conn = cursor = None
+
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (giora, masinhvien, mabuoihoc))
+
+            if cursor.rowcount > 0:
+                conn.commit()
+                return True
+
+        except Exception as e:
+            print("UPDATE GIỜ RA ERROR:", e)
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return False
+
+    # ======================
+    # ❌ DELETE
+    # ======================
+    @staticmethod
     def delete(id):
-        query = "DELETE FROM diemdanh WHERE madiemdanh = '{}'".format(id)
+        query = "DELETE FROM diemdanh WHERE madiemdanh=?"
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
+
+            cursor.execute(query, (id,))
+
+            if cursor.rowcount > 0:
                 conn.commit()
                 return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
+
+        except Exception as e:
+            print("DELETE ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
+            if cursor: cursor.close()
+            if conn: conn.close()
+
         return False
-    
+
+    # ======================
+    # 🔎 FIND
+    # ======================
+    @staticmethod
     def find(key, value):
-        list = []
-        query = "SELECT dd.madiemdanh, sv.masinhvien, sv.hoten, l.tenlop, "\
-            + "dd.giovao, dd.giora, dd.mabuoihoc, "\
-            + "dd.hinhanh FROM diemdanh dd, sinhvien sv, lop l WHERE "\
-            + "l.malop = sv.malop AND dd.masinhvien = sv.masinhvien AND dd.{} LIKE '%{}%'".format(key, value)
+        allowed = ["madiemdanh", "masinhvien", "mabuoihoc"]
+        if key not in allowed:
+            return []
+
+        list_data = []
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            for row in DiemDanhDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
+
+            cursor.execute(f"""
+                SELECT *
+                FROM diemdanh
+                WHERE {key} LIKE ?
+            """, (f"%{value}%",))
+
+            for row in DiemDanhDAL.iter_row(cursor):
+                list_data.append(row)
+
+        except Exception as e:
+            print("FIND ERROR:", e)
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data
+
+    # ======================
+    # 📸 FIND IMAGE
+    # ======================
+    @staticmethod
     def findMaDiemDanh(value):
-        list = []
-        query = """ SELECT dd.hinhanh 
-            FROM diemdanh dd 
-            WHERE madiemdanh = '{}' """.format(value)
-        try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query)
-            for row in DiemDanhDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
-    
-    def add( dd: DiemDanh):
-        query = """ INSERT INTO diemdanh (madiemdanh, masinhvien, giovao, mabuoihoc, hinhanh)
-                VALUES(%s, %s, %s, %s, %s) """
-        data = (dd._madiemdanh, dd._masinhvien, dd._giovao, dd._mabuoihoc, dd._hinhanh)        
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
-    
-    def updateGioRa( masinhvien, mabuoihoc, giora):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE diemdanh
-                    SET giora = %s
-                    WHERE masinhvien = %s 
-                    AND mabuoihoc = %s """
-
-        data = (giora, masinhvien, mabuoihoc)
+        list_data = []
+        conn = cursor = None
 
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+            cursor.execute("""
+                SELECT hinhanh
+                FROM diemdanh
+                WHERE madiemdanh=?
+            """, (value,))
+
+            for row in DiemDanhDAL.iter_row(cursor):
+                list_data.append(row)
+
+        except Exception as e:
+            print("FIND IMAGE ERROR:", e)
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data

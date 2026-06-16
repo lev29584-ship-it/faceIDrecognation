@@ -1,37 +1,60 @@
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 from DAL.ThongKeDAL import ThongKeDAL
-from DAL.ThongKe import ThongKe
+
+
 class ThongKeBUS:
+    def __init__(self):
+        self.dal = ThongKeDAL()
+
+    # ======================
+    # 📊 OVERVIEW COUNT
+    # ======================
+    def getOverview(self):
+        return {
+            "total_students": self.dal.getsv(),
+            "total_attendance": self.dal.getdd(),
+            "late": self.dal.getlate(),
+            "absent": self.dal.getabsent(),
+            "no_check": self.dal.getKDD()
+        }
+
+    # ======================
+    # 📊 SINGLE COUNTS (optional use)
+    # ======================
     def svcount(self):
-        return ThongKeDAL.getsv(self)
+        return self.dal.getsv()
 
     def ddcount(self):
-        return ThongKeDAL.getdd(self)
+        return self.dal.getdd()
 
     def latecount(self):
-        return ThongKeDAL.getlate(self)
+        return self.dal.getlate()
 
     def absentcount(self):
-        return ThongKeDAL.getabsent(self)
+        return self.dal.getabsent()
 
-    def KDDcount(self):
-        return ThongKeDAL.getKDD(self)
+    def kddcount(self):
+        return self.dal.getKDD()
 
-    def list_DiMuon(self):
-        return ThongKeDAL.list_DiMuon(self)
+    # ======================
+    # 📋 LIST REPORTS
+    # ======================
+    def list_di_muon(self):
+        return self.dal.list_DiMuon()
 
-    def list_Vang(self):
-        return ThongKeDAL.list_Vang(self)
+    def list_vang(self):
+        return self.dal.list_Vang()
 
-    def list_KDD(self):
-        return ThongKeDAL.list_KDD(self)
-    def find_DiMuon(self, key, value):
-        return ThongKeDAL.find_DiMuon(self, key, value)
-    def find_Vang(self, key, value):
-        return ThongKeDAL.find_Vang(self, key, value)
-    def find_KhongDD(self, key, value):
-        return ThongKeDAL.find_KhongDD(self, key, value)
+    def list_kdd(self):
+        return self.dal.list_KDD()
 
+    # ======================
+    # 🔎 SEARCH REPORT
+    # ======================
+    def find_di_muon(self, key, value):
+        return self.dal.find_DiMuon(key, value)
+
+    def find_vang(self, key, value):
+        return self.dal.find_Vang(key, value)
+
+    def find_khong_dd(self, key, value):
+        return self.dal.find_KhongDD(key, value)

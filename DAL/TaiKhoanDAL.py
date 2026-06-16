@@ -1,14 +1,11 @@
-
-import os
-import sys
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 from .TaiKhoan import TaiKhoan
 from .ConnectDatabase import ConnectDatabase
 import re
 
+
 class TaiKhoanDAL:
 
+    @staticmethod
     def iter_row(cursor, size=10):
         while True:
             rows = cursor.fetchmany(size)
@@ -16,219 +13,247 @@ class TaiKhoanDAL:
                 break
             for row in rows:
                 yield row
+
+    # ===== GET =====
+    @staticmethod
     def get():
-        list = []
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM taikhoan")            
-            for row in TaiKhoanDAL.iter_row(cursor, 10):
-                list.append(row)
-        except Exception as e:
-            print(e)
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+        list_data = []
+        conn = cursor = None
 
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM taikhoan")
+
+            for row in TaiKhoanDAL.iter_row(cursor, 10):
+                list_data.append(row)
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data
+
+    # ===== GENERATE ID =====
+    @staticmethod
     def generateID():
-        ma = ""
-        stt = ""
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = "SELECT `mataikhoan` "\
-                    + "FROM `taikhoan` "\
-                    + "ORDER BY `mataikhoan` DESC "\
-                    + "LIMIT 1"
-            cursor.execute(query)
+
+            cursor.execute("""
+                SELECT TOP 1 mataikhoan
+                FROM taikhoan
+                ORDER BY mataikhoan DESC
+            """)
+
             row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                stt = "0"
-            else:
-                stt = row[0]
-        except:
-            print("Lỗi tăng id")
-        stt = (int)(re.sub("[^0-9]", "",stt))+1
-        ma = "TK{0:03}".format(stt)
-        return ma
+            last_id = row[0] if row else "TK000"
 
-
-    def add( tk: TaiKhoan):
-        query = "INSERT INTO taikhoan "\
-                "VALUES(%s, %s, %s, %s)"
-        data = (tk._mataikhoan, tk._email, tk._matkhau,tk._maquyen)   
-        try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
-            cursor = conn.cursor()
-            cursor.execute(query, data)         
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+            num = int(re.sub(r"\D", "", last_id)) + 1
+            return f"TK{num:03}"
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
 
-    def update( tk: TaiKhoan):
-       # Câu lệnh update dữ liệu
-        query = """ UPDATE taikhoan
-                    SET email = %s,
-                    maquyen = %s
-                    WHERE mataikhoan = %s """
+    # ===== ADD =====
+    @staticmethod
+    def add(tk: TaiKhoan):
 
-        data = (tk._email, tk._maquyen, tk._mataikhoan)
-        
+        query = """
+        INSERT INTO taikhoan (mataikhoan, email, matkhau, maquyen)
+        VALUES (?, ?, ?, ?)
+        """
+
+        data = (
+            tk._mataikhoan,
+            tk._email,
+            tk._matkhau,
+            tk._maquyen
+        )
+
+        conn = cursor = None
+
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
+
             cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+            conn.commit()
+
+            return cursor.rowcount > 0
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== UPDATE =====
+    @staticmethod
+    def update(tk: TaiKhoan):
+
+        query = """
+        UPDATE taikhoan
+        SET email = ?, maquyen = ?
+        WHERE mataikhoan = ?
+        """
+
+        conn = cursor = None
+
+        try:
+            conn = ConnectDatabase().Connect()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (
+                tk._email,
+                tk._maquyen,
+                tk._mataikhoan
+            ))
+
+            conn.commit()
+            return cursor.rowcount > 0
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== DELETE =====
+    @staticmethod
     def delete(id):
-        query = "DELETE FROM taikhoan WHERE mataikhoan = '{}'".format(id)
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
-    
+
+            cursor.execute(
+                "DELETE FROM taikhoan WHERE mataikhoan = ?",
+                (id,)
+            )
+
+            conn.commit()
+            return cursor.rowcount > 0
+
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== FIND =====
+    @staticmethod
     def find(key, value):
-        list = []
-        query = "SELECT * FROM taikhoan WHERE {} LIKE '%{}%'".format(key, value)
+
+        allowed_keys = ["mataikhoan", "email", "maquyen"]
+        if key not in allowed_keys:
+            return []
+
+        list_data = []
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query)
+
+            cursor.execute(
+                f"SELECT * FROM taikhoan WHERE {key} LIKE ?",
+                (f"%{value}%",)
+            )
+
             for row in TaiKhoanDAL.iter_row(cursor, 10):
-                list.append(row)            
-        except Exception as ex:
-            print(ex)
-    
-        finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return list
+                list_data.append(row)
 
-    def checkLogin(email,password):
-        global cursor
-        query = 'SELECT * FROM `taikhoan` WHERE `email` = %s and `matkhau` = %s'
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+        return list_data
+
+    # ===== LOGIN =====
+    @staticmethod
+    def checkLogin(email, password):
+
+        conn = cursor = None
+
         try:
-             # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            vals = (email, password)        
-            cursor.execute(query, vals)
-            user = cursor.fetchone()
-            if user is not None:                
-                return user[1], user[2], user[3]
-        except Exception as ex:
-            print(ex)
-    
-        finally:
-            # Đóng kết nối
-            
-            cursor.close()
-            conn.close()
-        return False
 
+            cursor.execute("""
+                SELECT mataikhoan, email, maquyen
+                FROM taikhoan
+                WHERE email = ? AND matkhau = ?
+            """, (email, password))
+
+            return cursor.fetchone()
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== PASSWORD =====
+    @staticmethod
     def changePassword(email, mkmoi):
-        # Câu lệnh update dữ liệu
-        query = """ UPDATE taikhoan
-                    SET matkhau = %s
-                    WHERE email = %s """
 
-        data = (mkmoi, email)
-        
+        conn = cursor = None
+
         try:
-            # Kết nối database
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            cursor.execute(query, data)
-            if cursor.rowcount>0:
-                conn.commit()
-                return True
-            
-        except Exception as ex:
-            print(ex)
-            return False
+
+            cursor.execute("""
+                UPDATE taikhoan
+                SET matkhau = ?
+                WHERE email = ?
+            """, (mkmoi, email))
+
+            conn.commit()
+            return cursor.rowcount > 0
 
         finally:
-            # Đóng kết nối
-            cursor.close()
-            conn.close()
-        return False
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== CHECK ADMIN =====
+    @staticmethod
     def checkNotTaiKhoanAmin(mataikhoan):
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = """
-            SELECT *
-            FROM taikhoan
-            WHERE mataikhoan = '{}'
-            AND maquyen = 'Q001' """.format(mataikhoan)
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                return True
-        except Exception as ex:
-            print(ex)
-        return False
+
+            cursor.execute("""
+                SELECT 1 FROM taikhoan
+                WHERE mataikhoan = ? AND maquyen = 'Q001'
+            """, (mataikhoan,))
+
+            return cursor.fetchone() is None
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    # ===== CHECK EMAIL =====
+    @staticmethod
     def checkEmailTonTai(email):
+
+        conn = cursor = None
+
         try:
-            connDb = ConnectDatabase()
-            conn = connDb.Connect()
+            conn = ConnectDatabase().Connect()
             cursor = conn.cursor()
-            query = """
-            SELECT *
-            FROM taikhoan
-            WHERE email = '{}' """.format(email)
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if (row is None and cursor.rowcount == -1):
-                return True
-        except Exception as ex:
-            print(ex)
-        return False
+
+            cursor.execute(
+                "SELECT 1 FROM taikhoan WHERE email = ?",
+                (email,)
+            )
+
+            return cursor.fetchone() is not None
+
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
