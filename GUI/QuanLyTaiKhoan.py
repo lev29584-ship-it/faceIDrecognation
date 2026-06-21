@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'ui/QuanLyTaiKhoan.ui'
+﻿# Form implementation generated from reading ui file 'ui/QuanLyTaiKhoan.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
@@ -9,7 +9,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMessageBox
 from datetime import datetime
-from check_error import check_error
+from .check_error import CheckError as check_error
 import os
 import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +22,7 @@ from BUS.TaiKhoanBUS import TaiKhoanBUS
 from DAL.TaiKhoan import TaiKhoan
 from BUS.Quyen_ChucNangBUS import Quyen_ChucNangBUS
 from DAL.Quyen_ChucNang import Quyen_ChucNang
-import DialogListChucNang
+from . import DialogListChucNang
 class UI_QuanLyTaiKhoan(object):
         macn = ""
         maquyen = ""
@@ -310,7 +310,7 @@ class UI_QuanLyTaiKhoan(object):
                 font.setPointSize(9)
                 self.cmbOptionFindTaiKhoan.setFont(font)
                 self.cmbOptionFindTaiKhoan.setObjectName("cmbOptionFindTaiKhoan")
-                self.cmbOptionFindTaiKhoan.addItem("Mã tài khoản", "mataikhoan")
+                self.cmbOptionFindTaiKhoan.addItem("MÃ£ tÃ i khoáº£n", "mataikhoan")
                 self.cmbOptionFindTaiKhoan.addItem("Email", "email")
                 self.cmbOptionFindTaiKhoan.currentIndexChanged.connect(self.findTaiKhoan)
                 self.txtFindTaiKhoan = QtWidgets.QLineEdit(parent=self.frame_5)
@@ -378,8 +378,8 @@ class UI_QuanLyTaiKhoan(object):
                 font.setPointSize(9)
                 self.cmbOptionFindQuyen.setFont(font)
                 self.cmbOptionFindQuyen.setObjectName("cmbOptionFindQuyen")
-                self.cmbOptionFindQuyen.addItem("Mã quyền", "maquyen")
-                self.cmbOptionFindQuyen.addItem("Tên quyền", "tenquyen")
+                self.cmbOptionFindQuyen.addItem("MÃ£ quyá»n", "maquyen")
+                self.cmbOptionFindQuyen.addItem("TÃªn quyá»n", "tenquyen")
                 self.cmbOptionFindQuyen.currentIndexChanged.connect(self.findQuyen)
                 self.txtFindQuyen = QtWidgets.QLineEdit(parent=self.frame_7)
                 self.txtFindQuyen.setGeometry(QtCore.QRect(200, 10, 151, 21))
@@ -547,8 +547,8 @@ class UI_QuanLyTaiKhoan(object):
                 font.setPointSize(9)
                 self.cmbOptionFindChucNang.setFont(font)
                 self.cmbOptionFindChucNang.setObjectName("cmbOptionFindChucNang")
-                self.cmbOptionFindChucNang.addItem("Mã chức năng", "machucnang")
-                self.cmbOptionFindChucNang.addItem("Tên chức năng", "tenchucnang")
+                self.cmbOptionFindChucNang.addItem("MÃ£ chá»©c nÄƒng", "machucnang")
+                self.cmbOptionFindChucNang.addItem("TÃªn chá»©c nÄƒng", "tenchucnang")
                 self.cmbOptionFindChucNang.currentIndexChanged.connect(self.findChucNang)
                 self.txtFindChucNang = QtWidgets.QLineEdit(parent=self.frame_4)
                 self.txtFindChucNang.setGeometry(QtCore.QRect(200, 10, 151, 21))
@@ -663,7 +663,7 @@ class UI_QuanLyTaiKhoan(object):
                 self.loadDataQTableChucNang()
                 self.loadDataQTableQuyen()
                 self.retranslateUi(MainWindow)
-                # tạo timer
+                # táº¡o timer
                 self.timer = QtCore.QTimer()
                 self.timer.timeout.connect(self.clock_number)
                 # start and update every second
@@ -674,50 +674,50 @@ class UI_QuanLyTaiKhoan(object):
         def retranslateUi(self, MainWindow):
                 _translate = QtCore.QCoreApplication.translate
                 MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-                self.label_20.setText(_translate("MainWindow", "Phần mềm điểm danh sinh viên"))
-                self.label_3.setText(_translate("MainWindow", "Quản lý tài khoản"))
-                self.btnBack.setText(_translate("MainWindow", "Trở về"))
-                self.btnThemTaiKhoan.setText(_translate("MainWindow", "Thêm"))
-                self.btnSuaTaiKhoan.setText(_translate("MainWindow", "Sửa"))
-                self.btnXoaTaiKhoan.setText(_translate("MainWindow", "Xóa"))
-                self.btnLamMoiTaiKhoan.setText(_translate("MainWindow", "Làm mới"))
+                self.label_20.setText(_translate("MainWindow", "Pháº§n má»m Ä‘iá»ƒm danh sinh viÃªn"))
+                self.label_3.setText(_translate("MainWindow", "Quáº£n lÃ½ tÃ i khoáº£n"))
+                self.btnBack.setText(_translate("MainWindow", "Trá»Ÿ vá»"))
+                self.btnThemTaiKhoan.setText(_translate("MainWindow", "ThÃªm"))
+                self.btnSuaTaiKhoan.setText(_translate("MainWindow", "Sá»­a"))
+                self.btnXoaTaiKhoan.setText(_translate("MainWindow", "XÃ³a"))
+                self.btnLamMoiTaiKhoan.setText(_translate("MainWindow", "LÃ m má»›i"))
                 item = self.tbwTaiKhoan.horizontalHeaderItem(0)
-                item.setText(_translate("MainWindow", "Mã tài khoản"))
+                item.setText(_translate("MainWindow", "MÃ£ tÃ i khoáº£n"))
                 item = self.tbwTaiKhoan.horizontalHeaderItem(1)
                 item.setText(_translate("MainWindow", "Email"))
                 item = self.tbwTaiKhoan.horizontalHeaderItem(2)
-                item.setText(_translate("MainWindow", "Quyền"))
-                self.label_14.setText(_translate("MainWindow", "Quyền"))
+                item.setText(_translate("MainWindow", "Quyá»n"))
+                self.label_14.setText(_translate("MainWindow", "Quyá»n"))
                 self.label_10.setText(_translate("MainWindow", "Email"))           
-                self.label_8.setText(_translate("MainWindow", "Thông tin tài khoản"))
-                self.label_23.setText(_translate("MainWindow", "Hệ thống tìm kiếm:"))
-                self.label_24.setText(_translate("MainWindow", "Tìm kiếm theo:"))
-                self.cmbOptionFindTaiKhoan.setItemText(0, _translate("MainWindow", "Mã tài khoản"))
+                self.label_8.setText(_translate("MainWindow", "ThÃ´ng tin tÃ i khoáº£n"))
+                self.label_23.setText(_translate("MainWindow", "Há»‡ thá»‘ng tÃ¬m kiáº¿m:"))
+                self.label_24.setText(_translate("MainWindow", "TÃ¬m kiáº¿m theo:"))
+                self.cmbOptionFindTaiKhoan.setItemText(0, _translate("MainWindow", "MÃ£ tÃ i khoáº£n"))
                 item = self.tbwQuyen.horizontalHeaderItem(0)
-                item.setText(_translate("MainWindow", "Mã quyền"))
+                item.setText(_translate("MainWindow", "MÃ£ quyá»n"))
                 item = self.tbwQuyen.horizontalHeaderItem(1)
-                item.setText(_translate("MainWindow", "Tên quyền"))
-                self.label_25.setText(_translate("MainWindow", "Tìm kiếm theo:"))
-                self.cmbOptionFindQuyen.setItemText(0, _translate("MainWindow", "Mã quyền"))
-                self.label_26.setText(_translate("MainWindow", "Quản lý quyền"))
-                self.label_27.setText(_translate("MainWindow", "Tên quyền"))
-                self.btnThemQuyen.setText(_translate("MainWindow", "Thêm"))
-                self.btnSuaQuyen.setText(_translate("MainWindow", "Sửa"))
-                self.btnXoaQuyen.setText(_translate("MainWindow", "Xóa"))
-                self.btnLamMoiQuyen.setText(_translate("MainWindow", "Làm mới"))
-                self.btnChonChucNang.setText(_translate("MainWindow", "Chọn chức năng"))
-                self.label_19.setText(_translate("MainWindow", "Quản lý chức năng"))
-                self.label_21.setText(_translate("MainWindow", "Tìm kiếm theo:"))
-                self.cmbOptionFindChucNang.setItemText(0, _translate("MainWindow", "Mã chức năng"))
-                self.label_22.setText(_translate("MainWindow", "Tên chức năng"))
-                self.btnXoaChucNang.setText(_translate("MainWindow", "Xóa"))
-                self.btnLamMoiChucNang.setText(_translate("MainWindow", "Làm mới"))
+                item.setText(_translate("MainWindow", "TÃªn quyá»n"))
+                self.label_25.setText(_translate("MainWindow", "TÃ¬m kiáº¿m theo:"))
+                self.cmbOptionFindQuyen.setItemText(0, _translate("MainWindow", "MÃ£ quyá»n"))
+                self.label_26.setText(_translate("MainWindow", "Quáº£n lÃ½ quyá»n"))
+                self.label_27.setText(_translate("MainWindow", "TÃªn quyá»n"))
+                self.btnThemQuyen.setText(_translate("MainWindow", "ThÃªm"))
+                self.btnSuaQuyen.setText(_translate("MainWindow", "Sá»­a"))
+                self.btnXoaQuyen.setText(_translate("MainWindow", "XÃ³a"))
+                self.btnLamMoiQuyen.setText(_translate("MainWindow", "LÃ m má»›i"))
+                self.btnChonChucNang.setText(_translate("MainWindow", "Chá»n chá»©c nÄƒng"))
+                self.label_19.setText(_translate("MainWindow", "Quáº£n lÃ½ chá»©c nÄƒng"))
+                self.label_21.setText(_translate("MainWindow", "TÃ¬m kiáº¿m theo:"))
+                self.cmbOptionFindChucNang.setItemText(0, _translate("MainWindow", "MÃ£ chá»©c nÄƒng"))
+                self.label_22.setText(_translate("MainWindow", "TÃªn chá»©c nÄƒng"))
+                self.btnXoaChucNang.setText(_translate("MainWindow", "XÃ³a"))
+                self.btnLamMoiChucNang.setText(_translate("MainWindow", "LÃ m má»›i"))
                 item = self.tbwChucNang.horizontalHeaderItem(0)
-                item.setText(_translate("MainWindow", "Mã chức năng"))
+                item.setText(_translate("MainWindow", "MÃ£ chá»©c nÄƒng"))
                 item = self.tbwChucNang.horizontalHeaderItem(1)
-                item.setText(_translate("MainWindow", "Tên chức năng"))
-                self.btnThemChucNang.setText(_translate("MainWindow", "Thêm"))
-                self.btnSuaChucNang.setText(_translate("MainWindow", "Sửa"))
+                item.setText(_translate("MainWindow", "TÃªn chá»©c nÄƒng"))
+                self.btnThemChucNang.setText(_translate("MainWindow", "ThÃªm"))
+                self.btnSuaChucNang.setText(_translate("MainWindow", "Sá»­a"))
         def loadDataQTableChucNang(self):                    
                 cn = ChucNangBUS()
                 list = cn.get()
@@ -742,11 +742,11 @@ class UI_QuanLyTaiKhoan(object):
                 cn = ChucNang(machucnang, tenchucnang)
                 if self.validateCN(cn):
                         if(cnBUS.add(cn)):
-                                QMessageBox.information(self.centralwidget,"Thông báo","Thêm thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm thÃ nh cÃ´ng")
                                 self.loadDataQTableChucNang()
                                 self.clearChucNang()
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Thêm thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm tháº¥t báº¡i")
         def updateChucNang(self):
                 cnBUS = ChucNangBUS()
                 machucnang = self.macn
@@ -755,18 +755,18 @@ class UI_QuanLyTaiKhoan(object):
                 cn = ChucNang(machucnang, tenchucnang)
                 if self.validateCN(cn):
                         if(cnBUS.update(cn)):
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t thÃ nh cÃ´ng")
                                 self.loadDataQTableChucNang()
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t tháº¥t báº¡i")
         def deleteChucNang(self):
                 cnBUS = ChucNangBUS()
                 if(cnBUS.delete(self.macn)):
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thành công")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a thÃ nh cÃ´ng")
                         self.loadDataQTableChucNang()
                         self.clearChucNang()
                 else:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thất bại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a tháº¥t báº¡i")
         def findChucNang(self):
                 cn = ChucNangBUS()
                 key =  self.cmbOptionFindChucNang.currentData()
@@ -808,11 +808,11 @@ class UI_QuanLyTaiKhoan(object):
                 q = Quyen(maquyen, tenquyen)
                 if self.validateQuyen(q):
                         if(qBUS.add(q)):
-                                QMessageBox.information(self.centralwidget,"Thông báo","Thêm thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm thÃ nh cÃ´ng")
                                 self.loadDataQTableQuyen()
                                 self.clearQuyen()
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Thêm thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm tháº¥t báº¡i")
 
         def updateQuyen(self):
                 qBUS = QuyenBUS()
@@ -822,18 +822,18 @@ class UI_QuanLyTaiKhoan(object):
                 q = Quyen(maquyen, tenquyen)
                 if self.validateQuyen(q):
                         if(qBUS.update(q)):
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t thÃ nh cÃ´ng")
                                 self.loadDataQTableQuyen()
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t tháº¥t báº¡i")
         def deleteQuyen(self):
                 qBUS = QuyenBUS()
                 if(qBUS.delete(self.maquyen)):
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thành công")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a thÃ nh cÃ´ng")
                         self.loadDataQTableQuyen()
                         self.clearQuyen()
                 else:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thất bại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a tháº¥t báº¡i")
         def findQuyen(self):
                 q = QuyenBUS()
                 key =  self.cmbOptionFindQuyen.currentData()
@@ -872,7 +872,7 @@ class UI_QuanLyTaiKhoan(object):
                 cr = self.tbwTaiKhoan.currentRow()
                 self.mataikhoan = self.tbwTaiKhoan.item(cr,0).text()
                 self.txtEmail.setText(self.tbwTaiKhoan.item(cr,1).text())
-                # LẤY TÊN QUYỀN SET COMBOBOX
+                # Láº¤Y TÃŠN QUYá»€N SET COMBOBOX
                 qBUS = QuyenBUS()
                 dstenquyen = qBUS.find('maquyen',self.tbwTaiKhoan.item(cr,2).text())
                 if dstenquyen is not None:
@@ -895,16 +895,16 @@ class UI_QuanLyTaiKhoan(object):
                 
                 ktraEmail = tkBUS.find('email', email)
                 if ktraEmail is None:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Email đã tồn tại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Email Ä‘Ã£ tá»“n táº¡i")
                 else:
                         tk = TaiKhoan(mataikhoan, email, matkhau,quyen)
                         if self.validateTK(tk):
                                 if(tkBUS.add(tk)):
-                                        QMessageBox.information(self.centralwidget,"Thông báo","Thêm thành công")
+                                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm thÃ nh cÃ´ng")
                                         self.loadDataQTableTaiKhoan()
                                         self.clearTaiKhoan()
                                 else:
-                                        QMessageBox.information(self.centralwidget,"Thông báo","Thêm thất bại")
+                                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","ThÃªm tháº¥t báº¡i")
 
         def updateTaiKhoan(self):
                 tkBUS = TaiKhoanBUS()
@@ -916,18 +916,18 @@ class UI_QuanLyTaiKhoan(object):
                 tk = TaiKhoan(mataikhoan, email, matkhau, quyen)
                 if self.validateTK(tk):
                         if(tkBUS.update(tk)):
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t thÃ nh cÃ´ng")
                                 self.loadDataQTableTaiKhoan()
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Cập nhật thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Cáº­p nháº­t tháº¥t báº¡i")
         def deleteTaiKhoan(self):
                 tkBUS = TaiKhoanBUS()
                 if(tkBUS.delete(self.mataikhoan)):
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thành công")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a thÃ nh cÃ´ng")
                         self.loadDataQTableTaiKhoan()
                         self.clearTaiKhoan()
                 else:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Xóa thất bại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","XÃ³a tháº¥t báº¡i")
         def findTaiKhoan(self):   
                 tk = TaiKhoanBUS()
                 key =  self.cmbOptionFindTaiKhoan.currentData()
@@ -958,9 +958,9 @@ class UI_QuanLyTaiKhoan(object):
                                                 self.add = False
                 if self.statusAdd:
                         if self.add:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Chọn chức năng thành công")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Chá»n chá»©c nÄƒng thÃ nh cÃ´ng")
                         else:
-                                QMessageBox.information(self.centralwidget,"Thông báo","Chọn chức năng thất bại")
+                                QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Chá»n chá»©c nÄƒng tháº¥t báº¡i")
 
         def openDialogListChucNang(self, maquyen):                   
                 self.Dialog = QtWidgets.QDialog()
@@ -973,29 +973,29 @@ class UI_QuanLyTaiKhoan(object):
                         self.updateNewChucNangForQuyen()
         def validateTK(self, tk: TaiKhoan):        
                 if tk._email == '':
-                        QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập đầy đủ thông tin")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin")
                         return False
                 if check_error.check_email(self, input=tk._email) == False:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập email đúng định dạng")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Vui lÃ²ng nháº­p email Ä‘Ãºng Ä‘á»‹nh dáº¡ng")
                         return False
                 if TaiKhoanBUS.checkEmailTonTai(self, email=tk._email) == False:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Email đã tồn tại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Email Ä‘Ã£ tá»“n táº¡i")
                         return False
                 return True
         def validateQuyen(self, q: Quyen):        
                 if q._tenquyen == '':
-                        QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập đầy đủ thông tin")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin")
                         return False
                 if QuyenBUS.checkTenQuyenTonTai(self, tenquyen=q._tenquyen) == False:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Tên quyền đã tồn tại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","TÃªn quyá»n Ä‘Ã£ tá»“n táº¡i")
                         return False
                 return True
         def validateCN(self, cn: ChucNang):        
                 if cn._tenchucnang == '':
-                        QMessageBox.information(self.centralwidget,"Thông báo","Vui lòng nhập đầy đủ thông tin")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin")
                         return False
                 if ChucNangBUS.checkTenCNTonTai(self, tenchucnang=cn._tenchucnang) == False:
-                        QMessageBox.information(self.centralwidget,"Thông báo","Tên chức năng đã tồn tại")
+                        QMessageBox.information(self.centralwidget,"ThÃ´ng bÃ¡o","TÃªn chá»©c nÄƒng Ä‘Ã£ tá»“n táº¡i")
                         return False
                 return True
         
@@ -1016,4 +1016,7 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec())
+
+
+
 

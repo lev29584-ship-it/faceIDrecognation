@@ -44,7 +44,7 @@ class ViewImage(object):
             label.setAlignment(Qt.AlignmentFlag.AlignCenter) # căn giữa ảnh trong label
             
             # Tạo đối tượng QPixmap từ file ảnh
-            file_path = os.path.join("image\photo\\"+ self.idSV +'-image'+str(i+1)+'.jpg')
+            file_path = os.path.join("image", "photo", self.idSV + '-image' + str(i+1) + '.jpg')
             pixmap = QPixmap(file_path)
             
             # Thay đổi kích thước của ảnh

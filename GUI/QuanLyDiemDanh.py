@@ -21,7 +21,7 @@ from BUS.DiemDanhBUS import DiemDanhBUS
 from DAL.DiemDanh import DiemDanh
 import time
 from datetime import datetime
-from DD_ViewImage import DD_ViewImage
+from .DD_ViewImage import DD_ViewImage
 class UI_QuanLyDiemDanh(object):
         ma = ""
         def setupUi(self, MainWindow):
@@ -631,7 +631,7 @@ class UI_QuanLyDiemDanh(object):
 
                 t = time.localtime()
                 current_time = time.strftime("%H%M%S", t)       
-                tenfile =  "FileExcel\DiemDanh\DiemDanh{}.xlsx".format(current_time)
+                tenfile = os.path.join("FileExcel", "DiemDanh", "DiemDanh{}.xlsx".format(current_time))
                 df.to_excel(tenfile, index=False)
 
                 if(columnHeaders != ""):

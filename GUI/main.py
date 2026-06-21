@@ -1,7 +1,10 @@
 from PyQt6 import QtGui, QtWidgets, QtCore
 from pathlib import Path, PurePath
 import sys
+import os
 from . import Home
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from . import QuanLySinhVien
 from . import QuanLyBuoiHoc
 from . import NhanDien
@@ -17,28 +20,26 @@ maquyen = ''
 email = ''
 password = ''
 class mainGUI():
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()        
     ui = ''
     DarkMode = True
     def __init__(self, email, password, maquyen):
         self.email = email
         self.password = password
         self.maquyen = maquyen
+        self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+        self.MainWindow = QtWidgets.QMainWindow()
         
         
     def listChangeStyleSheet_MD(self):
-        self.ui.btnDark.setIcon(QtGui.QIcon("image/icon/moon_symbol_50px.png"))
-        self.ui.btnTime.setIcon(QtGui.QIcon("image/icon/time_20px.png"))    
-        self.app.setStyleSheet(Path(
-            r"qss\py_md_style.qss").read_text())        
+        self.ui.btnDark.setIcon(QtGui.QIcon(os.path.join(BASE_DIR, "image", "icon", "moon_symbol_50px.png")))
+        self.ui.btnTime.setIcon(QtGui.QIcon(os.path.join(BASE_DIR, "image", "icon", "time_20px.png")))
+        self.app.setStyleSheet(Path(os.path.join(BASE_DIR, "qss", "py_md_style.qss")).read_text())
 
 
     def listChangeStyleSheet_Dark(self):
-        self.ui.btnDark.setIcon(QtGui.QIcon("image/icon/sun_50px.png"))
-        self.ui.btnTime.setIcon(QtGui.QIcon("image/icon/time_white_20px.png"))
-        self.app.setStyleSheet(Path(
-                r"qss\py_dark_style.qss").read_text())
+        self.ui.btnDark.setIcon(QtGui.QIcon(os.path.join(BASE_DIR, "image", "icon", "sun_50px.png")))
+        self.ui.btnTime.setIcon(QtGui.QIcon(os.path.join(BASE_DIR, "image", "icon", "time_white_20px.png")))
+        self.app.setStyleSheet(Path(os.path.join(BASE_DIR, "qss", "py_dark_style.qss")).read_text())
         
     
 
@@ -252,8 +253,7 @@ class mainGUI():
         self.ui = Login.Ui_MainWindow()
         self.ui.setupUi(self.window)
         self.DarkMode = True
-        self.app.setStyleSheet(Path(
-            r"qss\py_md_style.qss").read_text())                     
+        self.app.setStyleSheet(Path(os.path.join(BASE_DIR, "qss", "py_md_style.qss")).read_text())
         MainWindow.hide()
         self.window.show()
 
